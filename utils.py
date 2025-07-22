@@ -27,15 +27,51 @@ def snp500(time_range: list = None, print_statements: bool = True, plot: bool = 
         print(f"Current S&P 500 Index: {current_snp500:.2f}")
 
     if plot:
+        ma_20 = snp500_close.rolling(window=20).mean()
+        ma_50 = snp500_close.rolling(window=50).mean()
+        ma_alpha = 0.5
+
         plt.figure()
-        plt.plot(snp500_data.index, snp500_close)
+        plt.plot(snp500_data.index, snp500_close, label = "Index")
+        plt.plot(snp500_data.index, ma_20, label = "20-Day MA", alpha = ma_alpha)
+        plt.plot(snp500_data.index, ma_50, label = "50-Day MA", alpha = ma_alpha)
         plt.grid(True)
         plt.xlabel("Date")
         plt.ylabel("Index Value")
         plt.title("S&P 500 Index")
+        plt.legend()
         plt.show()
 
     return snp500_data
+
+def bonds(time_range: list = None, print_statements: bool = True, plot: bool = True):
+
+    start_date, end_date = create_start_end_dates(time_range)
+
+    bnd_data = yf.download("BND", start=start_date, end=end_date, progress=False, auto_adjust=False)
+    shy_data = yf.download("SHY", start=start_date, end=end_date, progress=False, auto_adjust=False)
+    iei_data = yf.download("IEI", start=start_date, end=end_date, progress=False, auto_adjust=False)
+    ief_data = yf.download("IEF", start=start_date, end=end_date, progress=False, auto_adjust=False)
+    tlh_data = yf.download("TLH", start=start_date, end=end_date, progress=False, auto_adjust=False)
+    tlt_data = yf.download("TLT", start=start_date, end=end_date, progress=False, auto_adjust=False)
+
+    if plot:
+        non_aggregate_alpha = 0.5
+        plt.figure()
+        plt.title("Bonds")
+        plt.plot(bnd_data.index, bnd_data['Close']/bnd_data['Close'].iloc[0], label = "Aggregate")
+        plt.plot(shy_data.index, shy_data['Close']/shy_data['Close'].iloc[0], label = '1-3 Year', alpha = non_aggregate_alpha)
+        plt.plot(iei_data.index, iei_data['Close']/iei_data['Close'].iloc[0], label = '3-7 Year', alpha = non_aggregate_alpha)
+        plt.plot(ief_data.index, ief_data['Close']/ief_data['Close'].iloc[0], label = '7-10 Year', alpha = non_aggregate_alpha)
+        plt.plot(tlh_data.index, tlh_data['Close']/tlh_data['Close'].iloc[0], label = '10-20 Year', alpha = non_aggregate_alpha)
+        plt.plot(tlt_data.index, tlt_data['Close']/tlt_data['Close'].iloc[0], label = '20+ Year', alpha = non_aggregate_alpha)
+        plt.grid(True)
+        plt.xlabel("Date")
+        plt.ylabel("Normalized Value")
+        plt.legend()
+        plt.show()
+
+    return bnd_data
 
 def gold_silver(time_range: list = None, print_statements: bool = True, plot: bool = True):
 
@@ -86,7 +122,7 @@ def fear_n_greed_idx(print_statements: bool = True):
     '''Gets fear and greed index data from CNN'''
     index_data = fear_and_greed.get()
     if print_statements:
-        print(f"Fear & Greed Index Value: {index_data.value}")
+        print(f"Fear & Greed Index Value: {index_data.value:.2f}")
         print(f"Market Sentiment: {index_data.description}")
 
     return index_data
