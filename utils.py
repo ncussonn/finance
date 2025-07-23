@@ -1,4 +1,5 @@
 import yfinance as yf
+import numpy as np
 import fear_and_greed
 import datetime
 from dateutil.relativedelta import relativedelta # used to prevent leap year from causing issues when looking back in time on Feb. 29th
@@ -14,6 +15,19 @@ def create_start_end_dates(time_range: list):
 
     return start_date, end_date
 
+def get_max_min(yf_data, current_value: float):
+    highest_values = yf_data['High']
+    lowest_values = yf_data['Low']
+    high = np.max(highest_values)
+    low = np.min(lowest_values)
+
+    if current_value > high:
+        high = current_value
+    if current_value < low:
+        low = current_value
+
+    return high, low
+
 def snp500(time_range: list = None, print_statements: bool = True, plot: bool = True):
 
     start_date, end_date = create_start_end_dates(time_range)
@@ -27,8 +41,8 @@ def snp500(time_range: list = None, print_statements: bool = True, plot: bool = 
         print(f"Current S&P 500 Index: {current_snp500:.2f}")
 
     if plot:
-        ma_20 = snp500_close.rolling(window=20).mean()
-        ma_50 = snp500_close.rolling(window=50).mean()
+        ma_20 = snp500_close.rolling(window=20, min_periods=1).mean()
+        ma_50 = snp500_close.rolling(window=50, min_periods=1).mean()
         ma_alpha = 0.5
 
         plt.figure()
@@ -80,6 +94,17 @@ def gold_silver(time_range: list = None, print_statements: bool = True, plot: bo
     gold_data = yf.download("GC=F", start=start_date, end=end_date, progress=False, auto_adjust=False)
     silv_data = yf.download("SI=F", start=start_date, end=end_date, progress=False, auto_adjust=False)
 
+    current_gold = yf.Ticker("GC=F").info['regularMarketPrice']
+    gold_high, gold_low = get_max_min(gold_data, current_gold)
+    current_silv = yf.Ticker("SI=F").info['regularMarketPrice']
+    silver_high, silver_low = get_max_min(silv_data, current_silv)
+    print("Gold\n_____")
+    print(f"Highest Value: {gold_high:.2f}")
+    print(f"Lowest Value: {gold_low:.2f}")
+    print("Silver\n_____")
+    print(f"Highest Value: {silver_high:.2f}")
+    print(f"Lowest Value: {silver_low:.2f}")
+    
     if plot:
         fig, axs = plt.subplots(2,1, sharex=True)
         axs[0].plot(gold_data.index, gold_data['Close'])
@@ -143,9 +168,13 @@ def vix(time_range: list = None, print_statements: bool = True, plot: bool = Tru
     high_volatility_value = 30
     stable_volatility_value = 20
 
+    highest, lowest = get_max_min(vix_data, current_vix)
+
     if print_statements:
         # Print the first few rows of the data
         print(f"Current VIX: {current_vix:.2f}")
+        print(f"Lowest Value: {lowest:.2f}")
+        print(f"Highest Value: {highest:.2f}")
         if current_vix >= high_volatility_value:
             print("High fear / volatility market.")
         if current_vix <= stable_volatility_value:
@@ -178,8 +207,12 @@ def bitcoin(time_range: list = None, print_statements: bool = True, plot: bool =
     btc_live = yf.Ticker("BTC-USD")
     current_btc = btc_live.info['regularMarketPrice']
 
+    highest, lowest = get_max_min(btc_data, current_btc)
+
     if print_statements:
         print(f"Current Bitcoin Price (USD): {current_btc:.2f}")
+        print(f"Lowest Price: {lowest:.2f}")
+        print(f"Highest Price: {highest:.2f}")
 
     if plot:
         plt.figure()
