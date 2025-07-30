@@ -28,6 +28,9 @@ def get_max_min(yf_data, current_value: float):
 
     return high, low
 
+def tighten_plot_xlims(x_array):
+    plt.xlim([x_array[0], x_array[-1]])
+
 def snp500(time_range: list = None, print_statements: bool = True, plot: bool = True):
 
     start_date, end_date = create_start_end_dates(time_range)
@@ -53,6 +56,8 @@ def snp500(time_range: list = None, print_statements: bool = True, plot: bool = 
         plt.xlabel("Date")
         plt.ylabel("Index Value")
         plt.title("S&P 500 Index")
+        plt.tick_params("x", rotation=45)
+        tighten_plot_xlims(snp500_data.index)
         plt.legend()
         plt.show()
 
@@ -82,6 +87,8 @@ def bonds(time_range: list = None, print_statements: bool = True, plot: bool = T
         plt.grid(True)
         plt.xlabel("Date")
         plt.ylabel("Normalized Value")
+        plt.tick_params("x", rotation=45)
+        tighten_plot_xlims(bnd_data.index)
         plt.legend()
         plt.show()
 
@@ -115,6 +122,7 @@ def gold_silver(time_range: list = None, print_statements: bool = True, plot: bo
         axs[1].set_xlabel('Date')
         axs[0].set_ylabel('Gold USD/oz')
         axs[1].set_ylabel('Silver USD/oz')
+        axs[1].tick_params("x", rotation = 45)
         plt.show()
 
     return gold_data, silv_data
@@ -192,6 +200,8 @@ def vix(time_range: list = None, print_statements: bool = True, plot: bool = Tru
         plt.ylabel('Index Value')
         plt.legend()
         plt.grid(True)
+        plt.tick_params("x", rotation=45)
+        tighten_plot_xlims(vix_data.index)
         plt.show()
 
     return vix_data
@@ -220,7 +230,9 @@ def bitcoin(time_range: list = None, print_statements: bool = True, plot: bool =
         plt.plot(btc_data.index, btc_data["Close"])
         plt.xlabel('Date')
         plt.ylabel('USD')
+        plt.tick_params("x", rotation=45)
         plt.grid(True)
+        tighten_plot_xlims(btc_data.index)
         plt.show()
 
     return btc_data
