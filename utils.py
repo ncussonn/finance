@@ -4,6 +4,9 @@ import fear_and_greed
 import datetime
 from dateutil.relativedelta import relativedelta # used to prevent leap year from causing issues when looking back in time on Feb. 29th
 import matplotlib.pyplot as plt
+import time
+
+FRED_API_KEY = '5b42796f382889f854861eef3a767f2c'
 
 def create_start_end_dates(time_range: list):
     if time_range is None:
@@ -28,8 +31,39 @@ def get_max_min(yf_data, current_value: float):
 
     return high, low
 
-def tighten_plot_xlims(x_array):
-    plt.xlim([x_array[0], x_array[-1]])
+def tighten_plot_xlims(x_array, ax = None):
+    if ax is not None:
+        ax.set_xlim([x_array[0], x_array[-1]])
+    else:
+        plt.xlim([x_array[0], x_array[-1]])
+
+def print_indicators(continuous_update: bool = False):
+    '''Prints the current market indicator values.'''
+
+    while(True):
+        # VIX
+        vix_live = yf.Ticker("^VIX")
+        current_vix = vix_live.info['regularMarketPrice']
+        high_volatility_value = 30
+        stable_volatility_value = 20
+        print(f"Current VIX: {current_vix:.2f}")
+        if current_vix >= high_volatility_value:
+            print("High fear / volatility market.")
+        if current_vix <= stable_volatility_value:
+            print("Stable market conditions.")
+        if current_vix < high_volatility_value and current_vix > stable_volatility_value:
+            print("Cautious market conditions. Neither stable nor fearful.")
+
+        # Fear and Greed
+        print("\n")
+        _ = fear_n_greed_idx(print_statements = True)
+
+        if not continuous_update:
+            break
+        else:
+            duration_s = 60
+            time.sleep(duration_s)    
+
 
 def snp500(time_range: list = None, print_statements: bool = True, plot: bool = True):
 
@@ -46,12 +80,14 @@ def snp500(time_range: list = None, print_statements: bool = True, plot: bool = 
     if plot:
         ma_20 = snp500_close.rolling(window=20, min_periods=1).mean()
         ma_50 = snp500_close.rolling(window=50, min_periods=1).mean()
+        ma_120 = snp500_close.rolling(window=120, min_periods=1).mean()
         ma_alpha = 0.5
 
         plt.figure()
         plt.plot(snp500_data.index, snp500_close, label = "Index")
         plt.plot(snp500_data.index, ma_20, label = "20-Day MA", alpha = ma_alpha)
         plt.plot(snp500_data.index, ma_50, label = "50-Day MA", alpha = ma_alpha)
+        plt.plot(snp500_data.index, ma_120, label = "120-Day MA", alpha = ma_alpha)
         plt.grid(True)
         plt.xlabel("Date")
         plt.ylabel("Index Value")
@@ -78,12 +114,12 @@ def bonds(time_range: list = None, print_statements: bool = True, plot: bool = T
         non_aggregate_alpha = 0.5
         plt.figure()
         plt.title("Bonds")
-        plt.plot(bnd_data.index, bnd_data['Close']/bnd_data['Close'].iloc[0], label = "Aggregate")
-        plt.plot(shy_data.index, shy_data['Close']/shy_data['Close'].iloc[0], label = '1-3 Year', alpha = non_aggregate_alpha)
-        plt.plot(iei_data.index, iei_data['Close']/iei_data['Close'].iloc[0], label = '3-7 Year', alpha = non_aggregate_alpha)
-        plt.plot(ief_data.index, ief_data['Close']/ief_data['Close'].iloc[0], label = '7-10 Year', alpha = non_aggregate_alpha)
-        plt.plot(tlh_data.index, tlh_data['Close']/tlh_data['Close'].iloc[0], label = '10-20 Year', alpha = non_aggregate_alpha)
-        plt.plot(tlt_data.index, tlt_data['Close']/tlt_data['Close'].iloc[0], label = '20+ Year', alpha = non_aggregate_alpha)
+        plt.plot(bnd_data.index, bnd_data['Close']/bnd_data['Close'].iloc[0], label = "Aggregate (BND)")
+        plt.plot(shy_data.index, shy_data['Close']/shy_data['Close'].iloc[0], label = '1-3 Year (SHY)', alpha = non_aggregate_alpha)
+        plt.plot(iei_data.index, iei_data['Close']/iei_data['Close'].iloc[0], label = '3-7 Year (IEI)', alpha = non_aggregate_alpha)
+        plt.plot(ief_data.index, ief_data['Close']/ief_data['Close'].iloc[0], label = '7-10 Year (IEF)', alpha = non_aggregate_alpha)
+        plt.plot(tlh_data.index, tlh_data['Close']/tlh_data['Close'].iloc[0], label = '10-20 Year (TLH)', alpha = non_aggregate_alpha)
+        plt.plot(tlt_data.index, tlt_data['Close']/tlt_data['Close'].iloc[0], label = '20+ Year (TLT)', alpha = non_aggregate_alpha)
         plt.grid(True)
         plt.xlabel("Date")
         plt.ylabel("Normalized Value")
@@ -113,9 +149,28 @@ def gold_silver(time_range: list = None, print_statements: bool = True, plot: bo
     print(f"Lowest Value: {silver_low:.2f}")
     
     if plot:
+
+        gld_ma_20 = gold_data['Close'].rolling(window=20, min_periods=1).mean()
+        gld_ma_50 = gold_data['Close'].rolling(window=50, min_periods=1).mean()
+        gld_ma_120 = gold_data['Close'].rolling(window=120, min_periods=1).mean()
+        
+        slv_ma_20 = silv_data['Close'].rolling(window=20, min_periods=1).mean()
+        slv_ma_50 = silv_data['Close'].rolling(window=50, min_periods=1).mean()
+        slv_ma_120 = silv_data['Close'].rolling(window=120, min_periods=1).mean()
+
+        ma_alpha = 0.5
+
         fig, axs = plt.subplots(2,1, sharex=True)
-        axs[0].plot(gold_data.index, gold_data['Close'])
-        axs[1].plot(silv_data.index, silv_data['Close'])
+        axs[0].plot(gold_data.index, gold_data['Close'], label="Gold")
+        axs[0].plot(gold_data.index, gld_ma_20, label="20-Day MA", alpha = ma_alpha)
+        axs[0].plot(gold_data.index, gld_ma_50, label="50-Day MA", alpha = ma_alpha)
+        axs[0].plot(gold_data.index, gld_ma_120, label="120-Day MA", alpha = ma_alpha)
+
+        axs[1].plot(silv_data.index, silv_data['Close'], label = "Silver")
+        axs[1].plot(silv_data.index, slv_ma_20, label="20-Day MA", alpha = ma_alpha)
+        axs[1].plot(silv_data.index, slv_ma_50, label="50-Day MA", alpha = ma_alpha)
+        axs[1].plot(silv_data.index, slv_ma_120, label="120-Day MA", alpha = ma_alpha)
+
         axs[0].grid(True)
         axs[1].grid(True)
         axs[0].set_title('Gold and Silver Prices')
@@ -123,6 +178,8 @@ def gold_silver(time_range: list = None, print_statements: bool = True, plot: bo
         axs[0].set_ylabel('Gold USD/oz')
         axs[1].set_ylabel('Silver USD/oz')
         axs[1].tick_params("x", rotation = 45)
+        tighten_plot_xlims(gold_data.index, axs[0])
+        tighten_plot_xlims(silv_data.index, axs[1])
         plt.show()
 
     return gold_data, silv_data
@@ -157,6 +214,13 @@ def fear_n_greed_idx(print_statements: bool = True):
     if print_statements:
         print(f"Fear & Greed Index Value: {index_data.value:.2f}")
         print(f"Market Sentiment: {index_data.description}")
+        print(f"\nFear and Greed Ranges:")
+        print(f"_______________________\n")
+        print(f"Extreme Fear:\t0 - 25")
+        print(f"Fear:\t\t25 - 50")
+        print(f"Neutral:\t50")
+        print(f"Greed:\t\t50 - 75")
+        print(f"Extreme Greed:\t75 - 100")
 
     return index_data
 
@@ -225,11 +289,21 @@ def bitcoin(time_range: list = None, print_statements: bool = True, plot: bool =
         print(f"Highest Price: {highest:.2f}")
 
     if plot:
+        btc_close = btc_data['Close']
+        ma_20 = btc_close.rolling(window=20, min_periods=1).mean()
+        ma_50 = btc_close.rolling(window=50, min_periods=1).mean()
+        ma_120 = btc_close.rolling(window=120, min_periods=1).mean()
+        ma_alpha = 0.5
+    
         plt.figure()
         plt.title("Bitcoin in USD")
-        plt.plot(btc_data.index, btc_data["Close"])
+        plt.plot(btc_data.index, btc_data["Close"], label = 'BTC')
+        plt.plot(btc_data.index, ma_20, label="20-Day MA", alpha = ma_alpha)
+        plt.plot(btc_data.index, ma_50, label="50-Day MA", alpha = ma_alpha)
+        plt.plot(btc_data.index, ma_120, label="120-Day MA", alpha = ma_alpha)
         plt.xlabel('Date')
         plt.ylabel('USD')
+        plt.legend()
         plt.tick_params("x", rotation=45)
         plt.grid(True)
         tighten_plot_xlims(btc_data.index)
